@@ -1,0 +1,2100 @@
+﻿<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Consultanta Meteorologica by Rares</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg: #03050a;
+            --s1: #070c15;
+            --s2: #0b1220;
+            --s3: #101828;
+            --cyan: #00e5ff;
+            --cyan2: #00b8d9;
+            --purple: #a855f7;
+            --purple2: #7c3aed;
+            --green: #22c55e;
+            --orange: #f97316;
+            --red: #ef4444;
+            --yellow: #eab308;
+            --text: #e2e8f0;
+            --muted: #64748b;
+            --border: rgba(0,229,255,.12);
+            --r: 14px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'DM Sans',sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+            /* ── GRID BG ── */
+            body::before {
+                content: '';
+                position: fixed;
+                inset: 0;
+                z-index: -1;
+                background-image: linear-gradient(rgba(0,229,255,.03) 1px,transparent 1px), linear-gradient(90deg,rgba(0,229,255,.03) 1px,transparent 1px);
+                background-size: 50px 50px;
+            }
+        /* ── GLOW BLOBS ── */
+        .blob1, .blob2, .blob3 {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: .12;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .blob1 {
+            width: 600px;
+            height: 600px;
+            background: var(--cyan);
+            top: -200px;
+            left: -200px;
+            animation: blobMove1 18s ease-in-out infinite;
+        }
+
+        .blob2 {
+            width: 500px;
+            height: 500px;
+            background: var(--purple);
+            bottom: -200px;
+            right: -100px;
+            animation: blobMove2 22s ease-in-out infinite;
+        }
+
+        .blob3 {
+            width: 400px;
+            height: 400px;
+            background: var(--green);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%,-50%);
+            animation: blobMove3 15s ease-in-out infinite;
+        }
+
+        @keyframes blobMove1 {
+            0%,100% {
+                transform: translate(0,0);
+            }
+
+            50% {
+                transform: translate(80px,60px);
+            }
+        }
+
+        @keyframes blobMove2 {
+            0%,100% {
+                transform: translate(0,0);
+            }
+
+            50% {
+                transform: translate(-60px,-80px);
+            }
+        }
+
+        @keyframes blobMove3 {
+            0%,100% {
+                transform: translate(-50%,-50%) scale(1);
+            }
+
+            50% {
+                transform: translate(-50%,-50%) scale(1.3);
+            }
+        }
+
+        /* ── SCROLLBAR ── */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--s1);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--cyan2);
+            border-radius: 3px;
+        }
+
+        /* ── PARTICLES ── */
+        #particles {
+            position: fixed;
+            inset: 0;
+            z-index: -1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            animation: particleFloat linear infinite;
+        }
+
+        @keyframes particleFloat {
+            0% {
+                transform: translateY(100vh) scale(0);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            90% {
+                opacity: .5;
+            }
+
+            100% {
+                transform: translateY(-20px) scale(1.5);
+                opacity: 0;
+            }
+        }
+
+        /* ── HEADER ── */
+        header {
+            padding: 1.4rem 2rem;
+            border-bottom: 1px solid var(--border);
+            background: rgba(3,5,10,.85);
+            backdrop-filter: blur(20px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background: linear-gradient(135deg,var(--cyan),var(--purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3rem;
+            box-shadow: 0 0 20px rgba(0,229,255,.4);
+            animation: iconPulse 3s ease-in-out infinite;
+        }
+
+        @keyframes iconPulse {
+            0%,100% {
+                box-shadow: 0 0 20px rgba(0,229,255,.4);
+            }
+
+            50% {
+                box-shadow: 0 0 35px rgba(0,229,255,.7),0 0 60px rgba(168,85,247,.3);
+            }
+        }
+
+        .logo-text h1 {
+            font-family: 'Syne',sans-serif;
+            font-size: 1.3rem;
+            font-weight: 800;
+            background: linear-gradient(90deg,var(--cyan),var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-text p {
+            font-size: .7rem;
+            color: var(--muted);
+            letter-spacing: .2em;
+            text-transform: uppercase;
+        }
+
+        .hdr-right {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .35rem .9rem;
+            border-radius: 999px;
+            background: rgba(34,197,94,.1);
+            border: 1px solid rgba(34,197,94,.3);
+            font-size: .72rem;
+            font-weight: 600;
+            color: #4ade80;
+        }
+
+        .sdot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #4ade80;
+            animation: sdotPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes sdotPulse {
+            0%,100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+
+            50% {
+                transform: scale(1.5);
+                opacity: .5;
+            }
+        }
+
+        .hdr-btn {
+            padding: .35rem .9rem;
+            border-radius: 999px;
+            font-size: .72rem;
+            font-weight: 600;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--muted);
+            cursor: pointer;
+            transition: all .2s;
+            font-family: 'DM Sans',sans-serif;
+        }
+
+            .hdr-btn:hover {
+                border-color: var(--cyan);
+                color: var(--cyan);
+                box-shadow: 0 0 12px rgba(0,229,255,.3);
+            }
+
+        /* ── MAIN ── */
+        main {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 2rem 2rem 5rem;
+        }
+
+        /* ── SECTION TITLE ── */
+        .sec-title {
+            font-family: 'Syne',sans-serif;
+            font-size: .7rem;
+            font-weight: 700;
+            letter-spacing: .25em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: .9rem;
+            display: flex;
+            align-items: center;
+            gap: .65rem;
+        }
+
+            .sec-title::before {
+                content: '';
+                display: block;
+                width: 20px;
+                height: 1px;
+                background: var(--cyan);
+            }
+
+            .sec-title::after {
+                content: '';
+                flex: 1;
+                height: 1px;
+                background: linear-gradient(90deg,var(--border),transparent);
+            }
+
+        /* ── GLASS CARD ── */
+        .card {
+            background: linear-gradient(135deg,rgba(11,18,32,.9),rgba(7,12,21,.95));
+            border: 1px solid var(--border);
+            border-radius: var(--r);
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+            transition: border-color .25s,box-shadow .25s;
+        }
+
+            .card::before {
+                content: '';
+                position: absolute;
+                inset: -1px;
+                border-radius: var(--r);
+                background: linear-gradient(135deg,rgba(0,229,255,.08),transparent 50%,rgba(168,85,247,.08));
+                opacity: 0;
+                transition: opacity .25s;
+                pointer-events: none;
+            }
+
+            .card:hover::before {
+                opacity: 1;
+            }
+
+            .card:hover {
+                border-color: rgba(0,229,255,.25);
+                box-shadow: 0 8px 32px rgba(0,229,255,.08);
+            }
+
+        .card-title {
+            font-family: 'Syne',sans-serif;
+            font-size: .88rem;
+            font-weight: 700;
+            color: var(--cyan);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+
+        /* ── HERO SEARCH ── */
+        .hero {
+            border-radius: 20px;
+            padding: 2.5rem;
+            margin-bottom: 2rem;
+            background: linear-gradient(135deg,rgba(0,229,255,.06),rgba(168,85,247,.06));
+            border: 1px solid rgba(0,229,255,.15);
+            position: relative;
+            overflow: hidden;
+        }
+
+            .hero::before {
+                content: 'METEO';
+                position: absolute;
+                right: -20px;
+                top: 50%;
+                transform: translateY(-50%);
+                font-family: 'Syne',sans-serif;
+                font-size: 8rem;
+                font-weight: 800;
+                color: rgba(0,229,255,.04);
+                letter-spacing: .1em;
+                white-space: nowrap;
+                pointer-events: none;
+            }
+
+            .hero h2 {
+                font-family: 'Syne',sans-serif;
+                font-size: 1.8rem;
+                font-weight: 800;
+                background: linear-gradient(90deg,var(--cyan),var(--purple),var(--orange));
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                margin-bottom: .5rem;
+            }
+
+            .hero p {
+                color: var(--muted);
+                font-size: .88rem;
+                line-height: 1.6;
+                max-width: 600px;
+            }
+
+        .hero-tags {
+            display: flex;
+            gap: .5rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .hero-tag {
+            padding: .25rem .75rem;
+            border-radius: 6px;
+            font-size: .7rem;
+            font-weight: 600;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        .ht-cyan {
+            background: rgba(0,229,255,.1);
+            color: var(--cyan);
+            border: 1px solid rgba(0,229,255,.2);
+        }
+
+        .ht-purple {
+            background: rgba(168,85,247,.1);
+            color: #c084fc;
+            border: 1px solid rgba(168,85,247,.2);
+        }
+
+        .ht-orange {
+            background: rgba(249,115,22,.1);
+            color: #fb923c;
+            border: 1px solid rgba(249,115,22,.2);
+        }
+
+        .ht-green {
+            background: rgba(34,197,94,.1);
+            color: #4ade80;
+            border: 1px solid rgba(34,197,94,.2);
+        }
+
+        /* ── SEARCH BAR ── */
+        .search-bar {
+            display: flex;
+            gap: .75rem;
+            margin-top: 1.5rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-input-wrap {
+            flex: 1;
+            min-width: 220px;
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: .75rem 1rem .75rem 2.8rem;
+            background: rgba(0,229,255,.05);
+            border: 1px solid rgba(0,229,255,.2);
+            border-radius: 999px;
+            color: var(--text);
+            font-family: 'DM Sans',sans-serif;
+            font-size: .9rem;
+            outline: none;
+            transition: all .2s;
+        }
+
+            .search-input:focus {
+                border-color: var(--cyan);
+                box-shadow: 0 0 0 3px rgba(0,229,255,.1),0 0 20px rgba(0,229,255,.15);
+            }
+
+            .search-input::placeholder {
+                color: var(--muted);
+            }
+
+        .search-icon {
+            position: absolute;
+            left: .9rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1rem;
+            pointer-events: none;
+        }
+
+        /* ── BUTTONS ── */
+        .btn {
+            padding: .65rem 1.4rem;
+            border-radius: 999px;
+            font-family: 'DM Sans',sans-serif;
+            font-size: .83rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .2s;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+        }
+
+        .btn-cyan {
+            background: linear-gradient(135deg,var(--cyan),var(--cyan2));
+            color: #03050a;
+            box-shadow: 0 4px 20px rgba(0,229,255,.3);
+        }
+
+            .btn-cyan:hover {
+                box-shadow: 0 6px 30px rgba(0,229,255,.5);
+                transform: translateY(-2px);
+            }
+
+        .btn-purple {
+            background: linear-gradient(135deg,var(--purple),var(--purple2));
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(168,85,247,.3);
+        }
+
+            .btn-purple:hover {
+                box-shadow: 0 6px 30px rgba(168,85,247,.5);
+                transform: translateY(-2px);
+            }
+
+        .btn-ghost {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--muted);
+        }
+
+            .btn-ghost:hover {
+                border-color: var(--cyan);
+                color: var(--cyan);
+                box-shadow: 0 0 12px rgba(0,229,255,.2);
+            }
+
+        .btn-green {
+            background: linear-gradient(135deg,#22c55e,#16a34a);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(34,197,94,.3);
+        }
+
+            .btn-green:hover {
+                box-shadow: 0 6px 30px rgba(34,197,94,.5);
+                transform: translateY(-2px);
+            }
+
+        .btn-orange {
+            background: linear-gradient(135deg,var(--orange),#ea580c);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(249,115,22,.3);
+        }
+
+            .btn-orange:hover {
+                box-shadow: 0 6px 30px rgba(249,115,22,.5);
+                transform: translateY(-2px);
+            }
+
+        .btn-red {
+            background: linear-gradient(135deg,var(--red),#dc2626);
+            color: #fff;
+        }
+
+            .btn-red:hover {
+                box-shadow: 0 6px 20px rgba(239,68,68,.4);
+                transform: translateY(-2px);
+            }
+
+        .btn-sm {
+            padding: .45rem 1rem;
+            font-size: .78rem;
+        }
+
+        .btn:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        /* ── STATS ROW ── */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit,minmax(160px,1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg,rgba(11,18,32,.9),rgba(7,12,21,.95));
+            border: 1px solid var(--border);
+            border-radius: var(--r);
+            padding: 1.2rem 1.4rem;
+            position: relative;
+            overflow: hidden;
+            transition: all .2s;
+        }
+
+            .stat-card:hover {
+                transform: translateY(-3px);
+                box-shadow: 0 12px 32px rgba(0,229,255,.08);
+            }
+
+            .stat-card::after {
+                content: attr(data-icon);
+                position: absolute;
+                right: 12px;
+                bottom: 8px;
+                font-size: 2.4rem;
+                opacity: .07;
+            }
+
+        .stat-lbl {
+            font-size: .65rem;
+            letter-spacing: .15em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: .45rem;
+        }
+
+        .stat-val {
+            font-family: 'Space Mono',monospace;
+            font-size: 2.1rem;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .stat-sub {
+            font-size: .7rem;
+            color: var(--muted);
+            margin-top: .2rem;
+        }
+
+        .sv-c {
+            color: var(--cyan);
+        }
+
+        .sv-p {
+            color: #c084fc;
+        }
+
+        .sv-g {
+            color: #4ade80;
+        }
+
+        .sv-o {
+            color: #fb923c;
+        }
+
+        .sv-r {
+            color: #f87171;
+        }
+
+        /* ── GRID LAYOUTS ── */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1.25rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .grid-4 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit,minmax(200px,1fr));
+            gap: 1.25rem;
+            margin-bottom: 1.25rem;
+        }
+
+        @media(max-width:900px) {
+            .grid-2, .grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* ── WEATHER LIVE CARD ── */
+        .weather-live {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 1.2rem;
+        }
+
+        .wl-temp {
+            font-family: 'Syne',sans-serif;
+            font-size: 3.6rem;
+            font-weight: 800;
+            background: linear-gradient(135deg,var(--cyan),var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            line-height: 1;
+        }
+
+        .wl-desc {
+            text-transform: capitalize;
+            font-size: .85rem;
+            color: var(--muted);
+            margin-top: .25rem;
+        }
+
+        .wl-city {
+            font-size: .78rem;
+            color: var(--cyan);
+            font-weight: 600;
+            margin-top: .1rem;
+        }
+
+        .wl-icon img {
+            width: 72px;
+            height: 72px;
+            filter: drop-shadow(0 0 16px rgba(0,229,255,.5));
+        }
+
+        .wl-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: .6rem;
+        }
+
+        .wl-box {
+            background: rgba(0,229,255,.04);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: .6rem .85rem;
+        }
+
+        .wl-box-lbl {
+            font-size: .6rem;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: .15rem;
+        }
+
+        .wl-box-val {
+            font-family: 'Space Mono',monospace;
+            font-size: .95rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        /* ── AQI ── */
+        .aqi-num {
+            font-family: 'Syne',sans-serif;
+            font-size: 4rem;
+            font-weight: 800;
+            line-height: 1;
+        }
+
+        .aqi-ring {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: conic-gradient(var(--cyan) 0deg,rgba(0,229,255,.1) 0deg);
+            box-shadow: 0 0 20px rgba(0,229,255,.3);
+            font-family: 'Syne',sans-serif;
+            font-size: 1.3rem;
+            font-weight: 800;
+            margin-bottom: .8rem;
+        }
+
+        .nivel-badge {
+            display: inline-block;
+            padding: .25rem .8rem;
+            border-radius: 6px;
+            font-size: .72rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            margin-bottom: 1rem;
+        }
+
+        .nb-ex {
+            background: rgba(34,197,94,.15);
+            color: #4ade80;
+            border: 1px solid rgba(34,197,94,.3);
+        }
+
+        .nb-bun {
+            background: rgba(34,197,94,.1);
+            color: #86efac;
+        }
+
+        .nb-mod {
+            background: rgba(234,179,8,.1);
+            color: #fde047;
+            border: 1px solid rgba(234,179,8,.25);
+        }
+
+        .nb-sl {
+            background: rgba(249,115,22,.1);
+            color: #fb923c;
+            border: 1px solid rgba(249,115,22,.25);
+        }
+
+        .nb-fs {
+            background: rgba(239,68,68,.1);
+            color: #f87171;
+            border: 1px solid rgba(239,68,68,.3);
+            box-shadow: 0 0 10px rgba(239,68,68,.3);
+        }
+
+        .pm-row {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            margin-bottom: .55rem;
+        }
+
+        .pm-lbl {
+            font-size: .67rem;
+            color: var(--muted);
+            width: 44px;
+            font-family: 'Space Mono',monospace;
+            font-weight: 700;
+        }
+
+        .pm-track {
+            flex: 1;
+            height: 5px;
+            background: rgba(255,255,255,.06);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .pm-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 1.2s cubic-bezier(.4,0,.2,1);
+        }
+
+        .pm-val {
+            font-family: 'Space Mono',monospace;
+            font-size: .7rem;
+            width: 50px;
+            text-align: right;
+            color: var(--muted);
+        }
+
+        /* ── RECOMANDARE BOX ── */
+        .rec-box {
+            border-radius: var(--r);
+            padding: 1.4rem;
+            margin-bottom: 1.25rem;
+            background: linear-gradient(135deg,rgba(0,229,255,.06),rgba(168,85,247,.06));
+            border: 1px solid rgba(0,229,255,.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+            .rec-box::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 2px;
+                background: linear-gradient(90deg,var(--cyan),var(--purple),var(--orange));
+            }
+
+        .rec-title {
+            font-family: 'Syne',sans-serif;
+            font-size: .88rem;
+            font-weight: 700;
+            color: var(--cyan);
+            margin-bottom: .5rem;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+
+        .rec-text {
+            font-size: .85rem;
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .scor-gradinarit {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            margin-top: .9rem;
+            padding: .75rem;
+            background: rgba(0,0,0,.3);
+            border-radius: 10px;
+        }
+
+        .scor-bar-wrap {
+            flex: 1;
+            height: 8px;
+            background: rgba(255,255,255,.06);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .scor-bar {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 1s ease;
+            background: linear-gradient(90deg,#ef4444,#eab308,#22c55e);
+        }
+
+        .scor-label {
+            font-family: 'Space Mono',monospace;
+            font-size: .75rem;
+            font-weight: 700;
+            min-width: 60px;
+        }
+
+        /* ── MAP ── */
+        #map {
+            height: 380px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .leaflet-popup-content-wrapper {
+            background: rgba(11,18,32,.97) !important;
+            border: 1px solid rgba(0,229,255,.2) !important;
+            border-radius: 12px !important;
+            color: var(--text) !important;
+            box-shadow: 0 8px 32px rgba(0,229,255,.15) !important;
+        }
+
+        .leaflet-popup-tip {
+            background: rgba(11,18,32,.97) !important;
+        }
+
+        .leaflet-popup-content {
+            font-family: 'DM Sans',sans-serif;
+            font-size: .82rem;
+            margin: 10px !important;
+        }
+
+        /* ── CHART ── */
+        .chart-wrap {
+            position: relative;
+            height: 230px;
+        }
+
+        /* ── CITY QUICK BUTTONS ── */
+        .city-btns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .5rem;
+            margin-bottom: 1rem;
+        }
+
+        .city-btn {
+            padding: .35rem .85rem;
+            border-radius: 8px;
+            font-size: .77rem;
+            font-weight: 600;
+            background: rgba(0,229,255,.05);
+            border: 1px solid var(--border);
+            color: var(--muted);
+            cursor: pointer;
+            transition: all .18s;
+            font-family: 'DM Sans',sans-serif;
+        }
+
+            .city-btn:hover {
+                background: rgba(0,229,255,.12);
+                border-color: var(--cyan);
+                color: var(--cyan);
+            }
+
+            .city-btn.active {
+                background: rgba(0,229,255,.15);
+                border-color: var(--cyan);
+                color: var(--cyan);
+                box-shadow: 0 0 12px rgba(0,229,255,.2);
+            }
+
+        /* ── TABS ── */
+        .tabs {
+            display: flex;
+            gap: .5rem;
+            margin-bottom: 1.2rem;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: .75rem;
+        }
+
+        .tab {
+            padding: .4rem 1rem;
+            border-radius: 8px;
+            font-size: .78rem;
+            font-weight: 600;
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            cursor: pointer;
+            transition: all .18s;
+            font-family: 'Syne',sans-serif;
+            letter-spacing: .05em;
+        }
+
+            .tab:hover {
+                color: var(--text);
+            }
+
+            .tab.active {
+                background: rgba(0,229,255,.1);
+                color: var(--cyan);
+                border: 1px solid rgba(0,229,255,.2);
+            }
+
+        /* ── TABLE ── */
+        .tscroll {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: .79rem;
+        }
+
+        thead tr {
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            padding: .55rem .85rem;
+            text-align: left;
+            font-size: .62rem;
+            letter-spacing: .15em;
+            text-transform: uppercase;
+            color: var(--muted);
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: .6rem .85rem;
+            border-bottom: 1px solid rgba(0,229,255,.04);
+            color: var(--text);
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background: rgba(0,229,255,.03);
+        }
+
+        .nbadge {
+            display: inline-block;
+            padding: .15rem .5rem;
+            border-radius: 5px;
+            font-size: .63rem;
+            font-weight: 700;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            font-family: 'Space Mono',monospace;
+        }
+
+        .del-row {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--muted);
+            padding: .2rem .4rem;
+            border-radius: 4px;
+            font-size: .8rem;
+            transition: all .15s;
+        }
+
+            .del-row:hover {
+                background: rgba(239,68,68,.15);
+                color: var(--red);
+            }
+
+        /* ── FORM ── */
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: .65rem;
+        }
+
+        .fg {
+            display: flex;
+            flex-direction: column;
+            gap: .3rem;
+        }
+
+            .fg.full {
+                grid-column: span 2;
+            }
+
+            .fg label {
+                font-size: .62rem;
+                letter-spacing: .12em;
+                text-transform: uppercase;
+                color: var(--muted);
+                font-weight: 700;
+            }
+
+            .fg input, .fg select {
+                background: rgba(0,229,255,.04);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: .52rem .85rem;
+                color: var(--text);
+                font-family: 'DM Sans',sans-serif;
+                font-size: .86rem;
+                outline: none;
+                transition: all .2s;
+            }
+
+                .fg input:focus, .fg select:focus {
+                    border-color: var(--cyan);
+                    box-shadow: 0 0 0 3px rgba(0,229,255,.08);
+                }
+
+                .fg input::placeholder {
+                    color: var(--muted);
+                }
+
+                .fg select option {
+                    background: var(--s2);
+                }
+
+        /* ── MODAL ── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.75);
+            backdrop-filter: blur(8px);
+            z-index: 999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+            .modal-overlay.open {
+                display: flex;
+            }
+
+        .modal {
+            background: linear-gradient(135deg,rgba(11,18,32,.99),rgba(7,12,21,.99));
+            border: 1px solid rgba(0,229,255,.2);
+            border-radius: 20px;
+            padding: 2rem;
+            width: 500px;
+            max-width: 95vw;
+            box-shadow: 0 24px 80px rgba(0,229,255,.1),0 0 0 1px rgba(0,229,255,.05);
+            animation: modalIn .25s cubic-bezier(.4,0,.2,1);
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(.95) translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-title {
+            font-family: 'Syne',sans-serif;
+            font-size: 1.1rem;
+            font-weight: 800;
+            background: linear-gradient(90deg,var(--cyan),var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1.4rem;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: .65rem;
+            margin-top: 1.3rem;
+        }
+
+        /* ── TOP CARDS ── */
+        .top-item {
+            display: flex;
+            align-items: center;
+            gap: .75rem;
+            padding: .65rem .85rem;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: rgba(0,229,255,.03);
+            margin-bottom: .5rem;
+            transition: all .18s;
+            cursor: default;
+        }
+
+            .top-item:hover {
+                border-color: rgba(0,229,255,.2);
+                background: rgba(0,229,255,.06);
+            }
+
+        .top-rank {
+            font-family: 'Syne',sans-serif;
+            font-size: 1.1rem;
+            font-weight: 800;
+            min-width: 28px;
+        }
+
+        .top-city {
+            font-weight: 700;
+            font-size: .88rem;
+        }
+
+        .top-meta {
+            font-size: .75rem;
+            color: var(--muted);
+        }
+
+        /* ── TOAST ── */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 9999;
+            background: linear-gradient(135deg,rgba(11,18,32,.98),rgba(7,12,21,.99));
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: .9rem 1.4rem;
+            font-size: .83rem;
+            font-weight: 600;
+            box-shadow: 0 8px 32px rgba(0,0,0,.4);
+            transform: translateY(120px);
+            opacity: 0;
+            transition: all .3s cubic-bezier(.4,0,.2,1);
+            max-width: 320px;
+        }
+
+            .toast.show {
+                transform: translateY(0);
+                opacity: 1;
+            }
+
+            .toast.t-cyan {
+                border-color: rgba(0,229,255,.3);
+                color: var(--cyan);
+            }
+
+            .toast.t-green {
+                border-color: rgba(34,197,94,.3);
+                color: #4ade80;
+            }
+
+            .toast.t-red {
+                border-color: rgba(239,68,68,.3);
+                color: #f87171;
+            }
+
+            .toast.t-orange {
+                border-color: rgba(249,115,22,.3);
+                color: #fb923c;
+            }
+
+        /* ── LOADER ── */
+        .loader {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border);
+            border-top-color: var(--cyan);
+            border-radius: 50%;
+            animation: spin .6s linear infinite;
+            vertical-align: middle;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ── TYPING ANIMATION ── */
+        .typing-text {
+            overflow: hidden;
+            white-space: nowrap;
+            animation: typing 2.5s steps(40,end) forwards,blink .75s step-end infinite;
+        }
+
+        @keyframes typing {
+            from {
+                width: 0;
+            }
+
+            to {
+                width: 100%;
+            }
+        }
+
+        @keyframes blink {
+            50% {
+                border-color: transparent;
+            }
+        }
+
+        /* ── PULSE NUMBER ── */
+        @keyframes numPop {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.15);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .num-pop {
+            animation: numPop .4s ease-out;
+        }
+
+        /* ── GARDEN SCORE COLORS ── */
+        .gs0, .gs1, .gs2, .gs3 {
+            color: #f87171;
+        }
+
+        .gs4, .gs5 {
+            color: #fde047;
+        }
+
+        .gs6, .gs7 {
+            color: #86efac;
+        }
+
+        .gs8, .gs9, .gs10 {
+            color: #4ade80;
+        }
+
+        footer {
+            text-align: center;
+            padding: 2rem;
+            color: var(--muted);
+            font-size: .72rem;
+            letter-spacing: .1em;
+            border-top: 1px solid var(--border);
+        }
+
+            footer strong {
+                color: var(--cyan);
+            }
+    </style>
+</head>
+<body>
+    <div id="particles"></div>
+    <div class="blob1"></div><div class="blob2"></div><div class="blob3"></div>
+
+    <!-- HEADER -->
+    <header>
+        <div class="logo">
+            <div class="logo-icon">&#127807;</div>
+            <div class="logo-text">
+                <h1>Consultanta Meteorologica</h1>
+                <p>by Rares &nbsp;·&nbsp; Flask + OpenWeatherMap + WAQI</p>
+            </div>
+        </div>
+        <div class="hdr-right">
+            <div class="status-badge"><span class="sdot"></span>LIVE DATA</div>
+            <button class="hdr-btn" onclick="exportCSV()">&#8595; Export CSV</button>
+            <button class="hdr-btn" onclick="openManualModal()">&#43; Manual</button>
+            <button class="hdr-btn" onclick="refreshAll()">&#8635; Refresh</button>
+        </div>
+    </header>
+
+    <main>
+
+        <!-- HERO -->
+        <div class="hero" style="margin-bottom:2rem;">
+            <h2>Dashboard Meteorologic Romania</h2>
+            <p>Analizeaza in timp real temperatura, calitatea aerului PM2.5 si conditiile pentru gradinarit in orice oras din Romania. Date live din OpenWeatherMap si WAQI.</p>
+            <div class="hero-tags">
+                <span class="hero-tag ht-cyan">OpenWeatherMap API</span>
+                <span class="hero-tag ht-purple">WAQI Air Quality</span>
+                <span class="hero-tag ht-orange">SQLite + Flask</span>
+                <span class="hero-tag ht-green">Leaflet Maps</span>
+                <span class="hero-tag ht-cyan">Chart.js</span>
+            </div>
+            <div class="search-bar">
+                <div class="search-input-wrap">
+                    <span class="search-icon">&#128269;</span>
+                    <input type="text" id="cityInput" class="search-input" placeholder="Cauta un oras (ex: Iasi, Brasov, Constanta...)" onkeydown="if(event.key==='Enter')searchLive()" />
+                </div>
+                <button class="btn btn-cyan" onclick="searchLive()" id="btnSearch">&#9889; Cauta live</button>
+                <button class="btn btn-purple" onclick="randomCity()">&#127922; Random</button>
+                <button class="btn btn-ghost" onclick="loadTops()">&#127942; Top Romania</button>
+            </div>
+            <!-- City quick buttons -->
+            <div class="city-btns" style="margin-top:.75rem;" id="cityQuickBtns"></div>
+        </div>
+
+        <!-- STATS -->
+        <div class="sec-title">Statistici globale</div>
+        <div class="stats-row">
+            <div class="stat-card" data-icon="&#128202;">
+                <div class="stat-lbl">Total inregistrari</div>
+                <div class="stat-val sv-c" id="stTotal">&#8212;</div>
+                <div class="stat-sub">masuratori in DB</div>
+            </div>
+            <div class="stat-card" data-icon="&#127777;">
+                <div class="stat-lbl">Temperatura medie</div>
+                <div class="stat-val sv-o" id="stTemp">&#8212;</div>
+                <div class="stat-sub">grade Celsius</div>
+            </div>
+            <div class="stat-card" data-icon="&#127807;">
+                <div class="stat-lbl">PM2.5 mediu</div>
+                <div class="stat-val sv-g" id="stPm">&#8212;</div>
+                <div class="stat-sub">&#956;g/m&#179;</div>
+            </div>
+            <div class="stat-card" data-icon="&#128168;">
+                <div class="stat-lbl">PM2.5 maxim</div>
+                <div class="stat-val sv-r" id="stPmMax">&#8212;</div>
+                <div class="stat-sub">varf inregistrat</div>
+            </div>
+            <div class="stat-card" data-icon="&#9660;">
+                <div class="stat-lbl">Temp minima</div>
+                <div class="stat-val sv-c" id="stTempMin">&#8212;</div>
+                <div class="stat-sub">cea mai rece</div>
+            </div>
+            <div class="stat-card" data-icon="&#9650;">
+                <div class="stat-lbl">Temp maxima</div>
+                <div class="stat-val sv-r" id="stTempMax">&#8212;</div>
+                <div class="stat-sub">cea mai calda</div>
+            </div>
+        </div>
+
+        <!-- RECOMANDARE -->
+        <div id="recBox" class="rec-box" style="display:none;">
+            <div class="rec-title"><span>&#129302;</span> <span id="recTitle">Asistent inteligent</span></div>
+            <div class="rec-text" id="recText"></div>
+            <div class="scor-gradinarit">
+                <span style="font-size:.78rem;color:var(--muted);white-space:nowrap;">Scor gradinarit</span>
+                <div class="scor-bar-wrap"><div class="scor-bar" id="scorBar" style="width:0%"></div></div>
+                <span class="scor-label" id="scorLabel">&#8212;</span>
+            </div>
+        </div>
+
+        <!-- WEATHER + AQI -->
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-title">&#9928; Vreme curenta · OpenWeatherMap</div>
+                <div id="weatherContent"><span style="color:var(--muted);font-size:.85rem;">Cauta un oras pentru date live.</span></div>
+            </div>
+            <div class="card">
+                <div class="card-title">&#127807; Calitate aer · WAQI</div>
+                <div id="aqiContent"><span style="color:var(--muted);font-size:.85rem;">Cauta un oras pentru indexul AQI.</span></div>
+            </div>
+        </div>
+
+        <!-- MAP + CHART -->
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-title" style="justify-content:space-between;">
+                    <span>&#128205; Harta Romania</span>
+                    <div style="display:flex;gap:.5rem;">
+                        <button class="btn btn-ghost btn-sm" onclick="leafMap.setView([45.94,24.96],7)">&#128269; Romania</button>
+                        <button class="btn btn-ghost btn-sm" onclick="clearMapMarkers()">&#10006; Clear</button>
+                    </div>
+                </div>
+                <div style="font-size:.72rem;color:var(--muted);margin-bottom:.75rem;">
+                    Markere colorate dupa calitatea aerului. Click pe marker = detalii.
+                </div>
+                <div id="map"></div>
+                <div style="display:flex;gap:1rem;margin-top:.75rem;flex-wrap:wrap;">
+                    <span style="font-size:.7rem;color:var(--muted);display:flex;align-items:center;gap:.3rem;"><span style="width:10px;height:10px;border-radius:50%;background:#22c55e;display:inline-block;"></span>AQI Bun</span>
+                    <span style="font-size:.7rem;color:var(--muted);display:flex;align-items:center;gap:.3rem;"><span style="width:10px;height:10px;border-radius:50%;background:#eab308;display:inline-block;"></span>Moderat</span>
+                    <span style="font-size:.7rem;color:var(--muted);display:flex;align-items:center;gap:.3rem;"><span style="width:10px;height:10px;border-radius:50%;background:#f97316;display:inline-block;"></span>Slab</span>
+                    <span style="font-size:.7rem;color:var(--muted);display:flex;align-items:center;gap:.3rem;"><span style="width:10px;height:10px;border-radius:50%;background:#ef4444;display:inline-block;"></span>Foarte slab</span>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-title" style="justify-content:space-between;">
+                    <span>&#128200; Grafic evolutie</span>
+                    <div style="display:flex;gap:.4rem;">
+                        <button class="btn btn-ghost btn-sm" id="tabAll" onclick="setChartFilter('all')">Toate</button>
+                        <button class="btn btn-ghost btn-sm" id="tabGood" onclick="setChartFilter('good')">Aer bun</button>
+                        <button class="btn btn-ghost btn-sm" id="tabBad" onclick="setChartFilter('bad')">Poluat</button>
+                    </div>
+                </div>
+                <div class="chart-wrap"><canvas id="mainChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- TOPS -->
+        <div id="topsSection" style="display:none;margin-bottom:1.25rem;">
+            <div class="sec-title">Top orase Romania (date live)</div>
+            <div class="grid-3">
+                <div class="card">
+                    <div class="card-title">&#127807; Cel mai bun aer</div>
+                    <div id="topBestAir"></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">&#127807; Ideal pentru gradinarit</div>
+                    <div id="topBestGarden"></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">&#9888;&#65039; Cel mai poluat aer</div>
+                    <div id="topWorstAir"></div>
+                </div>
+            </div>
+            <div class="grid-2">
+                <div class="card">
+                    <div class="card-title">&#128293; Cele mai calde orase</div>
+                    <div id="topHottest"></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">&#10052;&#65039; Cele mai reci orase</div>
+                    <div id="topColdest"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- GENERATOR -->
+        <div class="grid-2" style="margin-bottom:1.25rem;">
+            <div class="card">
+                <div class="card-title">&#128752; Generator senzori simulati</div>
+                <p style="font-size:.82rem;color:var(--muted);margin-bottom:1rem;">Simuleaza masuratori automate pentru orase din Romania.</p>
+                <div style="display:flex;gap:.65rem;flex-wrap:wrap;margin-bottom:1rem;">
+                    <button class="btn btn-cyan" onclick="genN(1)">&#9889; x1</button>
+                    <button class="btn btn-cyan" onclick="genN(5)">&#9889;&#9889; x5</button>
+                    <button class="btn btn-cyan" onclick="genN(10)">&#9889;&#9889;&#9889; x10</button>
+                    <button class="btn btn-purple" onclick="genN(20)">&#128293; x20</button>
+                </div>
+                <div id="genResult" style="font-size:.82rem;color:var(--muted);min-height:20px;"></div>
+            </div>
+            <div class="card">
+                <div class="card-title">&#128202; Distributie surse date</div>
+                <div class="chart-wrap" style="height:180px;"><canvas id="sourceChart"></canvas></div>
+            </div>
+        </div>
+
+        <!-- TABLE -->
+        <div class="sec-title">Istoric masuratori</div>
+        <div class="card" style="margin-bottom:2rem;">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.75rem;margin-bottom:1rem;">
+                <div class="tabs" style="margin-bottom:0;border-bottom:none;padding-bottom:0;">
+                    <button class="tab active" id="srcAll" onclick="filterSource('all')">Toate</button>
+                    <button class="tab" id="srcLive" onclick="filterSource('live')">Live</button>
+                    <button class="tab" id="srcSim" onclick="filterSource('simulator')">Simulator</button>
+                    <button class="tab" id="srcMan" onclick="filterSource('manual')">Manual</button>
+                </div>
+                <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+                    <button class="btn btn-ghost btn-sm" onclick="loadMeasurements()">&#8635; Reload</button>
+                    <button class="btn btn-ghost btn-sm" onclick="exportCSV()">&#8595; CSV</button>
+                    <button class="btn btn-red btn-sm" onclick="clearHistory()">&#128465; Sterge tot</button>
+                </div>
+            </div>
+            <div class="tscroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Oras</th>
+                            <th>Temp</th>
+                            <th>PM2.5</th>
+                            <th>Nivel aer</th>
+                            <th>Descriere</th>
+                            <th>Recomandare</th>
+                            <th>Sursa</th>
+                            <th>Timestamp</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <tr><td colspan="10" style="text-align:center;color:var(--muted);padding:2.5rem 0;"><span class="loader"></span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="tableMeta" style="margin-top:.75rem;font-size:.72rem;color:var(--muted);"></div>
+        </div>
+
+    </main>
+
+    <!-- MODAL MANUAL -->
+    <div class="modal-overlay" id="manualModal">
+        <div class="modal">
+            <div class="modal-title">&#10010; Adauga masurare manuala</div>
+            <div class="form-grid">
+                <div class="fg full"><label>Oras *</label><input type="text" id="mOras" placeholder="ex: Iasi" /></div>
+                <div class="fg"><label>Temperatura (°C) *</label><input type="number" id="mTemp" placeholder="22.5" step="0.1" /></div>
+                <div class="fg"><label>PM2.5 (&#956;g/m&#179;) *</label><input type="number" id="mPm" placeholder="35" /></div>
+                <div class="fg"><label>Latitudine</label><input type="number" id="mLat" placeholder="47.16" step="0.0001" /></div>
+                <div class="fg"><label>Longitudine</label><input type="number" id="mLon" placeholder="27.60" step="0.0001" /></div>
+                <div class="fg full"><label>Descriere</label><input type="text" id="mDesc" placeholder="ex: senin, vant moderat" /></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-ghost" onclick="closeManualModal()">Anuleaza</button>
+                <button class="btn btn-cyan" onclick="submitManual()">&#10003; Salveaza</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <footer>&#127807; Consultanta Meteorologica &nbsp;&#183;&nbsp; <strong>by Rares</strong> &nbsp;&#183;&nbsp; Flask + OpenWeatherMap + WAQI + Leaflet + Chart.js</footer>
+    <script>
+        // ═══════════════════ CONFIG ═══════════════════
+        const CITIES = [
+            { name: "Bucuresti", lat: 44.4268, lon: 26.1025 },
+            { name: "Cluj-Napoca", lat: 46.7712, lon: 23.6236 },
+            { name: "Iasi", lat: 47.1585, lon: 27.6014 },
+            { name: "Brasov", lat: 45.6427, lon: 25.5887 },
+            { name: "Constanta", lat: 44.1733, lon: 28.6383 },
+            { name: "Timisoara", lat: 45.7489, lon: 21.2087 },
+            { name: "Sibiu", lat: 45.7983, lon: 24.1256 },
+            { name: "Oradea", lat: 47.0458, lon: 21.9189 },
+        ];
+        let leafMap, mapMarkers = [], mainChart = null, srcChart = null;
+        let allData = [], currentFilter = 'all', currentSrc = 'all';
+
+        // ═══════════════════ INIT ═══════════════════
+        window.onload = () => {
+            buildParticles();
+            buildCityButtons();
+            initMap();
+            loadStats();
+            loadMeasurements();
+        };
+
+        // ═══════════════════ PARTICLES ═══════════════════
+        function buildParticles() {
+            const wrap = document.getElementById("particles");
+            for (let i = 0; i < 18; i++) {
+                const p = document.createElement("div"); p.className = "particle";
+                const size = Math.random() * 4 + 1;
+                const colors = ['var(--cyan)', 'var(--purple)', 'var(--green)', 'rgba(249,115,22,.7)'];
+                const col = colors[Math.floor(Math.random() * colors.length)];
+                const dur = Math.random() * 15 + 8;
+                const delay = Math.random() * 10;
+                p.style.cssText = `width:${size}px;height:${size}px;background:${col};
+          left:${Math.random() * 100}%;animation-duration:${dur}s;animation-delay:-${delay}s;
+          box-shadow:0 0 ${size * 2}px ${col};`;
+                wrap.appendChild(p);
+            }
+        }
+
+        // ═══════════════════ CITY BUTTONS ═══════════════════
+        function buildCityButtons() {
+            const wrap = document.getElementById("cityQuickBtns");
+            CITIES.forEach(c => {
+                const b = document.createElement("button");
+                b.className = "city-btn"; b.textContent = c.name;
+                b.onclick = () => {
+                    document.getElementById("cityInput").value = c.name;
+                    document.querySelectorAll(".city-btn").forEach(x => x.classList.remove("active"));
+                    b.classList.add("active");
+                    searchLive();
+                };
+                wrap.appendChild(b);
+            });
+        }
+
+        // ═══════════════════ MAP ═══════════════════
+        function initMap() {
+            leafMap = L.map("map", { center: [45.94, 24.96], zoom: 7 });
+            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+                attribution: "© OpenStreetMap", maxZoom: 18,
+            }).addTo(leafMap);
+            // Add city markers with default style
+            CITIES.forEach(c => {
+                addMapMarker(c.name, c.lat, c.lon, null, null, null);
+            });
+        }
+        function aqiColor(pm25) {
+            if (pm25 === null) return "#64748b";
+            if (pm25 <= 25) return "#22c55e";
+            if (pm25 <= 50) return "#4ade80";
+            if (pm25 <= 75) return "#eab308";
+            if (pm25 <= 100) return "#f97316";
+            return "#ef4444";
+        }
+        function addMapMarker(city, lat, lon, temp, pm25, desc) {
+            const col = aqiColor(pm25);
+            const ok = temp !== null && temp >= 15 && temp < 30 && (pm25 === null || pm25 <= 75);
+            const popup = `<div style="font-family:'DM Sans',sans-serif;min-width:180px;">
+        <div style="font-weight:800;font-size:.9rem;color:${col};margin-bottom:.5rem;">&#127807; ${city}</div>
+        ${temp !== null ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:.3rem;font-size:.78rem;margin-bottom:.5rem;">
+          <div><span style="color:#64748b;font-size:.62rem;text-transform:uppercase;">Temp</span><br><strong>${temp}°C</strong></div>
+          <div><span style="color:#64748b;font-size:.62rem;text-transform:uppercase;">PM2.5</span><br><strong style="color:${col}">${pm25 ?? 'N/A'}</strong></div>
+        </div>
+        <div style="font-size:.72rem;text-transform:capitalize;color:#94a3b8;margin-bottom:.4rem;">&#9729; ${desc || ''}</div>
+        <div style="padding:.2rem .6rem;border-radius:6px;font-size:.7rem;font-weight:700;display:inline-block;
+          background:${ok ? 'rgba(34,197,94,.15)' : 'rgba(234,179,8,.12)'};color:${ok ? '#4ade80' : '#fde047'};">
+          ${ok ? '&#127807; Ideal gradinarit' : '&#9888; Sub-optim'}
+        </div>`: '<div style="font-size:.72rem;color:#64748b;">Click Cauta pentru date live</div>'}
+      </div>`;
+            const marker = L.circleMarker([lat, lon], {
+                radius: pm25 === null ? 8 : 10, fillColor: col, color: 'rgba(0,0,0,.5)',
+                weight: 1.5, opacity: 1, fillOpacity: .9
+            }).bindPopup(popup).addTo(leafMap);
+            mapMarkers.push(marker);
+            return marker;
+        }
+        function clearMapMarkers() {
+            mapMarkers.forEach(m => leafMap.removeLayer(m));
+            mapMarkers = [];
+            CITIES.forEach(c => addMapMarker(c.name, c.lat, c.lon, null, null, null));
+        }
+        function updateMapFromData(data) {
+            mapMarkers.forEach(m => leafMap.removeLayer(m));
+            mapMarkers = [];
+            const byCity = {};
+            data.forEach(r => {
+                if (!byCity[r.oras] || r.id > byCity[r.oras].id) byCity[r.oras] = r;
+            });
+            CITIES.forEach(c => {
+                const r = byCity[c.name];
+                if (r) addMapMarker(c.name, r.lat || c.lat, r.lon || c.lon, r.temperatura, r.pm25, r.descriere);
+                else addMapMarker(c.name, c.lat, c.lon, null, null, null);
+            });
+            // Also add non-standard cities
+            Object.keys(byCity).forEach(city => {
+                if (!CITIES.find(c => c.name === city)) {
+                    const r = byCity[city];
+                    if (r.lat && r.lon) addMapMarker(city, r.lat, r.lon, r.temperatura, r.pm25, r.descriere);
+                }
+            });
+        }
+
+        // ═══════════════════ SEARCH LIVE ═══════════════════
+        async function searchLive() {
+            const city = document.getElementById("cityInput").value.trim();
+            if (!city) { showToast("Introdu un oras!", "t-red"); return; }
+            const btn = document.getElementById("btnSearch");
+            btn.disabled = true; btn.innerHTML = '<span class="loader"></span> Se incarca...';
+            showToast(`Se incarca datele pentru ${city}...`, "t-cyan");
+            try {
+                const r = await fetch(`/api/meteo/live/${encodeURIComponent(city)}`);
+                const d = await r.json();
+                if (d.eroare) { showToast("Eroare: " + d.eroare, "t-red"); return; }
+                renderWeather(d); renderAQI(d); renderRec(d);
+                // Update map marker for searched city
+                const c = CITIES.find(x => x.name === city) || { lat: d.lat, lon: d.lon };
+                // fly to city
+                if (d.lat && d.lon) leafMap.flyTo([d.lat, d.lon], 11, { duration: 1.5 });
+                showToast(`Date actualizate pentru ${d.oras}!`, "t-green");
+                loadStats(); loadMeasurements();
+            } catch (e) { showToast("Eroare de retea!", "t-red"); }
+            finally { btn.disabled = false; btn.innerHTML = '&#9889; Cauta live'; }
+        }
+
+        async function randomCity() {
+            showToast("Se alege un oras random...", "t-cyan");
+            try {
+                const r = await fetch("/api/random-city");
+                const d = await r.json();
+                if (!d.eroare) {
+                    document.getElementById("cityInput").value = d.oras;
+                    document.querySelectorAll(".city-btn").forEach(b => {
+                        b.classList.toggle("active", b.textContent === d.oras);
+                    });
+                    renderWeather(d); renderAQI(d); renderRec(d);
+                    if (d.lat && d.lon) leafMap.flyTo([d.lat, d.lon], 11, { duration: 1.5 });
+                    showToast(`Random: ${d.oras}`, "t-purple");
+                    loadStats(); loadMeasurements();
+                }
+            } catch (e) { showToast("Eroare!", "t-red"); }
+        }
+
+        // ═══════════════════ RENDER WEATHER ═══════════════════
+        function renderWeather(d) {
+            const el = document.getElementById("weatherContent");
+            el.innerHTML = `
+        <div class="weather-live">
+          <div>
+            <div class="wl-temp">${d.temperatura}<span style="font-size:1.5rem;color:var(--muted);">°C</span></div>
+            <div class="wl-desc">${d.descriere || ''}</div>
+            <div class="wl-city">&#128205; ${d.oras}</div>
+          </div>
+          ${d.icon ? `<div class="wl-icon"><img src="https://openweathermap.org/img/wn/${d.icon}@2x.png"/></div>` : ''}
+        </div>
+        <div class="wl-details">
+          <div class="wl-box"><div class="wl-box-lbl">Umiditate</div><div class="wl-box-val">${d.umiditate ?? '—'}%</div></div>
+          <div class="wl-box"><div class="wl-box-lbl">Vant</div><div class="wl-box-val">${d.vant ?? '—'} m/s</div></div>
+          <div class="wl-box"><div class="wl-box-lbl">Latitudine</div><div class="wl-box-val">${(d.lat || 0).toFixed(3)}</div></div>
+          <div class="wl-box"><div class="wl-box-lbl">Longitudine</div><div class="wl-box-val">${(d.lon || 0).toFixed(3)}</div></div>
+        </div>`;
+        }
+
+        // ═══════════════════ RENDER AQI ═══════════════════
+        function renderAQI(d) {
+            const el = document.getElementById("aqiContent");
+            const pm = d.pm25;
+            const col = aqiColor(pm);
+            const nivel = d.nivel_aer || 'necunoscut';
+            const clsMap = { 'excelent': 'nb-ex', 'bun': 'nb-bun', 'moderat': 'nb-mod', 'slab': 'nb-sl', 'foarte slab': 'nb-fs' };
+            const cls = clsMap[nivel] || 'nb-mod';
+            const p25w = pm !== null ? Math.min((pm / 200) * 100, 100).toFixed(1) : 0;
+            el.innerHTML = `
+        <div style="display:flex;align-items:flex-start;gap:1.2rem;margin-bottom:1rem;">
+          <div>
+            <div class="aqi-num" style="color:${col}">${pm ?? 'N/A'}</div>
+            <div style="font-size:.72rem;color:var(--muted);font-family:'Space Mono',monospace;">PM2.5 µg/m³</div>
+          </div>
+          <div>
+            <div class="nivel-badge ${cls}">${nivel}</div>
+            <div style="font-size:.78rem;color:var(--muted);">Oras: ${d.oras}</div>
+          </div>
+        </div>
+        <div class="pm-row">
+          <span class="pm-lbl">PM2.5</span>
+          <div class="pm-track"><div class="pm-fill" style="width:${p25w}%;background:${col}"></div></div>
+          <span class="pm-val">${pm ?? '—'} µg</span>
+        </div>`;
+        }
+
+        // ═══════════════════ RENDER REC ═══════════════════
+        function renderRec(d) {
+            const box = document.getElementById("recBox");
+            box.style.display = "block";
+            document.getElementById("recTitle").textContent = `Asistent inteligent — ${d.oras}`;
+            document.getElementById("recText").textContent = d.recomandare || '';
+            const scor = d.scor_gradinarit ?? 0;
+            document.getElementById("scorBar").style.width = `${scor * 10}%`;
+            const lbl = document.getElementById("scorLabel");
+            lbl.textContent = `${scor}/10`;
+            lbl.className = `scor-label gs${scor}`;
+        }
+
+        // ═══════════════════ STATS ═══════════════════
+        async function loadStats() {
+            try {
+                const d = await fetch("/api/stats").then(r => r.json());
+                animNum("stTotal", d.total ?? 0);
+                animNum("stTemp", d.avg_temp ?? 0, "°");
+                animNum("stPm", d.avg_pm ?? 0);
+                animNum("stPmMax", d.max_pm ?? 0);
+                animNum("stTempMin", d.min_temp ?? 0, "°");
+                animNum("stTempMax", d.max_temp ?? 0, "°");
+                buildSourceChart(d.by_source || []);
+            } catch (e) { }
+        }
+        function animNum(id, val, suffix = "") {
+            const el = document.getElementById(id);
+            el.textContent = (val ?? '—') + (val !== null && val !== undefined && val !== '—' ? suffix : '');
+            el.classList.remove("num-pop");
+            void el.offsetWidth;
+            el.classList.add("num-pop");
+        }
+
+        // ═══════════════════ CHARTS ═══════════════════
+        function buildMainChart(data) {
+            const ctx = document.getElementById("mainChart").getContext("2d");
+            if (mainChart) mainChart.destroy();
+            mainChart = new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: data.map(x => x.oras),
+                    datasets: [
+                        {
+                            label: "Temperatura (°C)", data: data.map(x => x.temperatura),
+                            borderColor: "#f97316", backgroundColor: "rgba(249,115,22,.08)",
+                            borderWidth: 2, tension: .4, pointRadius: 4, pointBackgroundColor: "#f97316",
+                            pointHoverRadius: 7, yAxisID: "y"
+                        },
+                        {
+                            label: "PM2.5", data: data.map(x => x.pm25),
+                            borderColor: "#00e5ff", backgroundColor: "rgba(0,229,255,.08)",
+                            borderWidth: 2, tension: .4, pointRadius: 4, pointBackgroundColor: "#00e5ff",
+                            pointHoverRadius: 7, yAxisID: "y1"
+                        },
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: "index", intersect: false },
+                    plugins: {
+                        legend: { labels: { color: "#94a3b8", font: { family: "DM Sans", size: 11 } } },
+                        tooltip: {
+                            backgroundColor: "rgba(7,12,21,.97)", borderColor: "rgba(0,229,255,.2)", borderWidth: 1,
+                            titleColor: "#e2e8f0", bodyColor: "#94a3b8", titleFont: { family: "Syne", size: 12 },
+                            padding: 12, cornerRadius: 10
+                        }
+                    },
+                    scales: {
+                        x: { ticks: { color: "#64748b", font: { size: 9 }, maxTicksLimit: 10 }, grid: { color: "rgba(0,229,255,.04)" } },
+                        y: { ticks: { color: "#f97316", font: { size: 9 } }, grid: { color: "rgba(0,229,255,.04)" }, title: { display: true, text: "°C", color: "#64748b", font: { size: 10 } } },
+                        y1: { position: "right", ticks: { color: "#00e5ff", font: { size: 9 } }, grid: { display: false }, title: { display: true, text: "PM2.5", color: "#64748b", font: { size: 10 } } }
+                    }
+                }
+            });
+        }
+        function buildSourceChart(bySource) {
+            const ctx = document.getElementById("sourceChart").getContext("2d");
+            if (srcChart) srcChart.destroy();
+            if (!bySource || !bySource.length) return;
+            const colors = { "live": "#00e5ff", "simulator": "#a855f7", "manual": "#f97316", "top_romania": "#22c55e" };
+            srcChart = new Chart(ctx, {
+                type: "doughnut",
+                data: {
+                    labels: bySource.map(s => s.source),
+                    datasets: [{
+                        data: bySource.map(s => s.nr),
+                        backgroundColor: bySource.map(s => colors[s.source] || "#64748b"),
+                        borderColor: "rgba(0,0,0,.3)", borderWidth: 2, hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: {
+                        legend: { labels: { color: "#94a3b8", font: { family: "DM Sans", size: 11 }, padding: 12 } },
+                        tooltip: {
+                            backgroundColor: "rgba(7,12,21,.97)", borderColor: "rgba(0,229,255,.2)", borderWidth: 1,
+                            titleColor: "#e2e8f0", bodyColor: "#94a3b8", padding: 10, cornerRadius: 10
+                        }
+                    }
+                }
+            });
+        }
+
+        // ═══════════════════ MEASUREMENTS ═══════════════════
+        let activeSource = 'all';
+        function filterSource(src) {
+            activeSource = src;
+            document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+            const map = { 'all': 'srcAll', 'live': 'srcLive', 'simulator': 'srcSim', 'manual': 'srcMan' };
+            document.getElementById(map[src])?.classList.add("active");
+            loadMeasurements();
+        }
+        async function loadMeasurements() {
+            try {
+                let url = "/api/measurements?limit=80";
+                if (activeSource !== 'all') url += `&source=${activeSource}`;
+                const rows = await fetch(url).then(r => r.json());
+                allData = rows;
+                renderTable(rows);
+                buildMainChart(rows.slice(0, 25).reverse());
+                updateMapFromData(rows);
+                document.getElementById("tableMeta").textContent = `${rows.length} inregistrari afisate`;
+            } catch (e) { }
+        }
+        function renderTable(rows) {
+            const tb = document.getElementById("tableBody");
+            if (!rows || !rows.length) {
+                tb.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:2.5rem 0;">Nicio inregistrare. Cauta un oras sau genereaza date simulate.</td></tr>';
+                return;
+            }
+            const clsMap = { 'excelent': 'nb-ex', 'bun': 'nb-bun', 'moderat': 'nb-mod', 'slab': 'nb-sl', 'foarte slab': 'nb-fs', 'necunoscut': '' };
+            const colMap = { 'live': 'color:var(--cyan)', 'simulator': 'color:#c084fc', 'manual': 'color:#fb923c', 'top_romania': 'color:#4ade80' };
+            tb.innerHTML = rows.map(m => `
+        <tr>
+          <td style="color:var(--muted);font-family:'Space Mono',monospace;font-size:.68rem">${m.id}</td>
+          <td style="font-weight:700;font-family:'Syne',sans-serif">${m.oras || '—'}</td>
+          <td style="font-family:'Space Mono',monospace;font-weight:600;color:${(m.temperatura || 0) > 30 ? 'var(--orange)' : (m.temperatura || 0) < 5 ? 'var(--cyan)' : '#4ade80'}">${m.temperatura != null ? m.temperatura + '°' : '—'}</td>
+          <td style="font-family:'Space Mono',monospace;font-weight:600;color:${aqiColor(m.pm25)}">${m.pm25 ?? '—'}</td>
+          <td><span class="nbadge ${clsMap[m.nivel_aer] || ''}" style="background:rgba(0,0,0,.2)">${m.nivel_aer || '—'}</span></td>
+          <td style="color:var(--muted);font-size:.75rem;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.descriere || '—'}</td>
+          <td style="color:var(--muted);font-size:.72rem;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${m.recomandare || ''}">${m.recomandare || '—'}</td>
+          <td style="font-size:.72rem;${colMap[m.source] || ''};">${m.source || '—'}</td>
+          <td style="color:var(--muted);font-size:.68rem;font-family:'Space Mono',monospace;white-space:nowrap">${(m.timestamp || '').slice(0, 16)}</td>
+          <td><button class="del-row" onclick="deleteRow(${m.id})">&#x2715;</button></td>
+        </tr>`).join('');
+        }
+
+        // ═══════════════════ CHART FILTER ═══════════════════
+        function setChartFilter(f) {
+            document.querySelectorAll("#tabAll,#tabGood,#tabBad").forEach(b => b.classList.remove("btn-cyan"));
+            document.getElementById(f === 'all' ? 'tabAll' : f === 'good' ? 'tabGood' : 'tabBad').classList.add("btn-cyan");
+            let filtered = allData;
+            if (f === 'good') filtered = allData.filter(r => r.pm25 != null && r.pm25 <= 50);
+            if (f === 'bad') filtered = allData.filter(r => r.pm25 != null && r.pm25 > 75);
+            buildMainChart(filtered.slice(0, 25).reverse());
+        }
+
+        // ═══════════════════ GENERATE ═══════════════════
+        async function genN(n) {
+            showToast(`Se genereaza ${n} masuratori simulate...`, "t-purple");
+            try {
+                const r = await fetch(`/generate/${n}`, { method: "POST" });
+                const d = await r.json();
+                document.getElementById("genResult").textContent = `✓ Generate ${d.generat} masuratori simulate.`;
+                showToast(`${d.generat} masuratori generate!`, "t-green");
+                loadStats(); loadMeasurements();
+            } catch (e) { showToast("Eroare la generare!", "t-red"); }
+        }
+
+        // ═══════════════════ TOPS ═══════════════════
+        async function loadTops() {
+            const sec = document.getElementById("topsSection");
+            sec.style.display = "block";
+            sec.scrollIntoView({ behavior: "smooth", block: "start" });
+            showToast("Se calculeaza topurile live... (poate dura ~30s)", "t-cyan");
+            ["topBestAir", "topWorstAir", "topBestGarden", "topHottest", "topColdest"]
+                .forEach(id => document.getElementById(id).innerHTML = '<span class="loader"></span>');
+            try {
+                const r = await fetch("/api/top/romania");
+                const d = await r.json();
+                const rank = ["&#129351;", "&#129352;", "&#129353;", "4.", "5."];
+                const renderTop = (id, arr, keyFn) => {
+                    const el = document.getElementById(id);
+                    el.innerHTML = arr.map((x, i) => `
+            <div class="top-item">
+              <span class="top-rank">${rank[i]}</span>
+              <div>
+                <div class="top-city">${x.oras}</div>
+                <div class="top-meta">${keyFn(x)}</div>
+              </div>
+            </div>`).join('');
+                };
+                renderTop("topBestAir", d.best_air || [], x => `PM2.5: ${x.pm25} µg/m³ · ${x.nivel_aer}`);
+                renderTop("topWorstAir", d.worst_air || [], x => `PM2.5: ${x.pm25} µg/m³ · ${x.nivel_aer}`);
+                renderTop("topBestGarden", d.best_garden || [], x => `Scor: ${x.scor_gradinarit}/10 · ${x.temperatura}°C`);
+                renderTop("topHottest", d.hottest || [], x => `${x.temperatura}°C · ${x.descriere || ''}`);
+                renderTop("topColdest", d.coldest || [], x => `${x.temperatura}°C · ${x.descriere || ''}`);
+                showToast("Topuri actualizate!", "t-green");
+                loadStats(); loadMeasurements();
+            } catch (e) { showToast("Eroare la topuri!", "t-red"); }
+        }
+
+        // ═══════════════════ MANUAL ═══════════════════
+        function openManualModal() { document.getElementById("manualModal").classList.add("open"); }
+        function closeManualModal() { document.getElementById("manualModal").classList.remove("open"); }
+        document.getElementById("manualModal").addEventListener("click", e => { if (e.target === e.currentTarget) closeManualModal(); });
+        async function submitManual() {
+            const oras = document.getElementById("mOras").value.trim();
+            const temp = document.getElementById("mTemp").value;
+            const pm = document.getElementById("mPm").value;
+            if (!oras || !temp || !pm) { showToast("Oras, temperatura si PM2.5 sunt obligatorii!", "t-red"); return; }
+            try {
+                const r = await fetch("/api/measurements", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        oras, temperatura: +temp, pm25: +pm,
+                        lat: +document.getElementById("mLat").value || null,
+                        lon: +document.getElementById("mLon").value || null,
+                        descriere: document.getElementById("mDesc").value
+                    })
+                });
+                const d = await r.json();
+                if (r.ok) {
+                    showToast(`Salvat! Nivel aer: ${d.nivel_aer}`, "t-green");
+                    closeManualModal();
+                    ["mOras", "mTemp", "mPm", "mLat", "mLon", "mDesc"].forEach(id => document.getElementById(id).value = "");
+                    loadStats(); loadMeasurements();
+                } else showToast(d.eroare || "Eroare la salvare", "t-red");
+            } catch (e) { showToast("Eroare!", "t-red"); }
+        }
+
+        // ═══════════════════ DELETE / CLEAR ═══════════════════
+        async function deleteRow(id) {
+            if (!confirm(`Stergi inregistrarea #${id}?`)) return;
+            await fetch(`/api/measurements/${id}`, { method: "DELETE" });
+            showToast(`Inregistrarea #${id} stearsa`, "t-cyan");
+            loadStats(); loadMeasurements();
+        }
+        async function clearHistory() {
+            if (!confirm("Esti sigur ca vrei sa stergi TOT istoricul?")) return;
+            await fetch("/api/measurements/clear", { method: "POST" });
+            showToast("Istoricul a fost sters!", "t-orange");
+            loadStats(); loadMeasurements();
+        }
+
+        // ═══════════════════ EXPORT ═══════════════════
+        function exportCSV() {
+            window.open("/api/export/csv", "_blank");
+            showToast("Se descarca CSV...", "t-cyan");
+        }
+
+        // ═══════════════════ REFRESH ═══════════════════
+        function refreshAll() {
+            loadStats(); loadMeasurements();
+            showToast("Dashboard actualizat!", "t-green");
+        }
+
+        // ═══════════════════ TOAST ═══════════════════
+        function showToast(msg, cls = 't-cyan') {
+            const t = document.getElementById("toast");
+            t.textContent = msg; t.className = `toast ${cls} show`;
+            clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("show"), 3500);
+        }
+    </script>
+</body>
+</html>
