@@ -159,25 +159,23 @@ function buildParticles() {
 }
 
 
-        @keyframes particleFloat {
-            0% {
-                transform: translateY(100vh) scale(0);
-                opacity: 0;
-            }
+      @keyframes particleFloat {
+    0% {
+        transform: translateY(-50px) scale(0); /* SUS */
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: .5;
+    }
+    100% {
+        transform: translateY(100vh) scale(1.5); /* JOS */
+        opacity: 0;
+    }
+}
 
-            10% {
-                opacity: 1;
-            }
-
-            90% {
-                opacity: .5;
-            }
-
-            100% {
-                transform: translateY(-20px) scale(1.5);
-                opacity: 0;
-            }
-        }
 
         /* ── HEADER ── */
         header {
