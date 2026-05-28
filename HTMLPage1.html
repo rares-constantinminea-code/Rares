@@ -92,34 +92,42 @@
             animation: blobMove3 15s ease-in-out infinite;
         }
 
-        @keyframes blobMove1 {
-            0%,100% {
-        transform: translate(0, -150px); /* sus */
+       /* BLOB 1 – cade vertical */
+@keyframes blobMove1 {
+    0% {
+        transform: translateY(-200px);   /* sus */
     }
     50% {
-        transform: translate(0, 150px); /* jos */
+        transform: translateY(200px);    /* jos */
+    }
+    100% {
+        transform: translateY(-200px);   /* revine sus */
     }
 }
 
-        @keyframes blobMove2 {
-            0%,100% {
-                transform: translate(0,0);
-            }
+/* BLOB 2 – cade vertical */
+@keyframes blobMove2 {
+    0% {
+        transform: translateY(-250px);   /* sus */
+    }
+    50% {
+        transform: translateY(250px);    /* jos */
+    }
+    100% {
+        transform: translateY(-250px);   /* revine sus */
+    }
+}
 
-            50% {
-                transform: translate(-60px,-80px);
-            }
-        }
+/* BLOB 3 – pulsează, nu se mișcă vertical */
+@keyframes blobMove3 {
+    0%,100% {
+        transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.3);
+    }
+}
 
-        @keyframes blobMove3 {
-            0%,100% {
-                transform: translate(-50%,-50%) scale(1);
-            }
-
-            50% {
-                transform: translate(-50%,-50%) scale(1.3);
-            }
-        }
 
         /* ── SCROLLBAR ── */
         ::-webkit-scrollbar {
