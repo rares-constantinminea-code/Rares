@@ -125,19 +125,21 @@
         }
 
         /* ── PARTICLES ── */
-        #particles {
-            position: fixed;
-            inset: 0;
-            z-index: -1;
-            pointer-events: none;
-            overflow: hidden;
-        }
+       #particles {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    overflow: hidden;
+}
 
-        .particle {
-            position: absolute;
-            border-radius: 50%;
-            animation: particleFloat linear infinite;
-        }
+.particle {
+    position: absolute;
+    top: -50px; /* începe SUS */
+    border-radius: 50%;
+    animation: particleFloat linear infinite;
+}
+
 
         @keyframes particleFloat {
             0% {
@@ -1632,21 +1634,39 @@
         };
 
         // ═══════════════════ PARTICLES ═══════════════════
-        function buildParticles() {
-            const wrap = document.getElementById("particles");
-            for (let i = 0; i < 18; i++) {
-                const p = document.createElement("div"); p.className = "particle";
-                const size = Math.random() * 4 + 1;
-                const colors = ['var(--cyan)', 'var(--purple)', 'var(--green)', 'rgba(249,115,22,.7)'];
-                const col = colors[Math.floor(Math.random() * colors.length)];
-                const dur = Math.random() * 15 + 8;
-                const delay = Math.random() * 10;
-                p.style.cssText = `width:${size}px;height:${size}px;background:${col};
-          left:${Math.random() * 100}%;animation-duration:${dur}s;animation-delay:-${delay}s;
-          box-shadow:0 0 ${size * 2}px ${col};`;
-                wrap.appendChild(p);
-            }
-        }
+    function buildParticles() {
+    const wrap = document.getElementById("particles");
+
+    for (let i = 0; i < 18; i++) {
+        const p = document.createElement("div");
+        p.className = "particle";
+
+        const size = Math.random() * 4 + 1;
+        const colors = [
+            'var(--cyan)',
+            'var(--purple)',
+            'var(--green)',
+            'rgba(249,115,22,.7)'
+        ];
+        const col = colors[Math.floor(Math.random() * colors.length)];
+
+        const dur = Math.random() * 15 + 8;
+        const delay = Math.random() * 10;
+
+        p.style.cssText = `
+            width:${size}px;
+            height:${size}px;
+            background:${col};
+            left:${Math.random() * 100}%;
+            top:-50px; /* OBLIGATORIU — începe SUS */
+            animation-duration:${dur}s;
+            animation-delay:-${delay}s;
+            box-shadow:0 0 ${size * 2}px ${col};
+        `;
+
+        wrap.appendChild(p);
+    }
+}
 
         // ═══════════════════ CITY BUTTONS ═══════════════════
         function buildCityButtons() {
